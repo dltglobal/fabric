@@ -28,6 +28,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/golang-jwt/jwt"
 	"github.com/hyperledger/fabric/common/flogging"
 	"github.com/hyperledger/fabric/core/ledger"
 	"github.com/pkg/errors"
@@ -203,6 +204,11 @@ type databaseSecurity struct {
 type couchDoc struct {
 	jsonValue   []byte
 	attachments []*attachmentInfo
+}
+
+type JWT struct {
+	privateKey []byte
+	publicKey  []byte
 }
 
 func (d *couchDoc) key() (string, error) {
@@ -1707,6 +1713,10 @@ func (couchInstance *couchInstance) handleRequest(ctx context.Context, method, d
 		if couchInstance.conf.Username != "" && couchInstance.conf.Password != "" {
 			//req.Header.Set("Authorization", "Basic YWRtaW46YWRtaW5w")
 			req.SetBasicAuth(couchInstance.conf.Username, couchInstance.conf.Password)
+		} else if couchInstance.conf.JwtPrivateKey != "" && couchInstance.conf.JwtPublicKey != "" {
+			// Token generation service logic
+			token := generateToken(couchInstance.conf.JwtPrivateKey, couchInstance.conf.JwtPublicKey, couchInstance.conf.JwtUserName)
+			req.Header.Add("Authorization", "Bearer "+token)
 		}
 
 		//Execute http request
@@ -1881,4 +1891,55 @@ func printDocumentIds(documentPointers []*couchDoc) (string, error) {
 		documentIds = append(documentIds, docMetadata.ID)
 	}
 	return strings.Join(documentIds, ","), nil
+}
+
+func NewJWT(privateKey []byte, publicKey []byte) JWT {
+	return JWT{
+		privateKey: privateKey,
+		publicKey:  publicKey,
+	}
+}
+
+func (j JWT) Create(ttl time.Duration, jwtUserName string) (string, error) {
+	key, err := jwt.ParseRSAPrivateKeyFromPEM(j.privateKey)
+	if err != nil {
+		return "", fmt.Errorf("create: parse key: %w", err)
+	}
+
+	now := time.Now().UTC()
+
+	claims := make(jwt.MapClaims)
+	claims["_couchdb.roles"] = []string{"_admin"}
+	claims["exp"] = now.Add(ttl).Unix() // The expiration time after which the token must be disregarded.
+	claims["alg"] = "RS256"
+	claims["sub"] = jwtUserName // Couchdb Server Admin user name  
+
+	token, err := jwt.NewWithClaims(jwt.SigningMethodRS256, claims).SignedString(key)
+	if err != nil {
+		return "", fmt.Errorf("create: sign token: %w", err)
+	}
+
+	fmt.Println(token)
+
+	return token, nil
+}
+
+func generateToken(privateKeyPath string, publicKeyPath string, jwtUserName string) string {
+	prvKey, err := ioutil.ReadFile(privateKeyPath)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	pubKey, err := ioutil.ReadFile(publicKeyPath)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	jwtToken := NewJWT(prvKey, pubKey)
+
+	// 1. Create a new JWT token.
+	token, err := jwtToken.Create(time.Duration(24) * time.Hour, jwtUserName)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return token
 }

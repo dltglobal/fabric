@@ -61,6 +61,10 @@ type StateDBConfig struct {
 
 // CouchDBConfig is a structure used to configure a CouchInstance.
 type CouchDBConfig struct {
+	//JWT Authentication support
+	JwtPrivateKey string
+	JwtPublicKey  string
+	JwtUserName string
 	// Address is the hostname:port of the CouchDB database instance.
 	Address string
 	// Username is the username used to authenticate with CouchDB.  This username

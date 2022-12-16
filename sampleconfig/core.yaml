@@ -265,18 +265,18 @@ peer:
         clientAuthRequired: false
         # X.509 certificate used for TLS server
         cert:
-            file: tls/server.crt
+            file: ./organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/server.crt
         # Private key used for TLS server (and client if clientAuthEnabled
         # is set to true
         key:
-            file: tls/server.key
+            file: ./organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/keystore/ecdb62013c3a8fa3d01c7bc05dbfff01e128c633bc714928e9ba317436557898_sk
         # Trusted root certificate chain for tls.cert
         rootcert:
-            file: tls/ca.crt
+            file: ./organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
         # Set of root certificate authorities used to verify client certificates
         clientRootCAs:
             files:
-              - tls/ca.crt
+              - ./organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
         # Private key used for TLS when making client connections.  If
         # not set, peer.tls.key.file will be used instead
         clientKey:
@@ -325,7 +325,7 @@ peer:
             Security:
 
     # Path on the file system where peer will find MSP local configurations
-    mspConfigPath: msp
+    mspConfigPath: ./organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp
 
     # Identifier of the local MSP
     # ----!!!!IMPORTANT!!!-!!!IMPORTANT!!!-!!!IMPORTANT!!!!----
@@ -623,11 +623,15 @@ ledger:
     # Limit on the number of records to return per query
     totalQueryLimit: 100000
     couchDBConfig:
+       # For JWT authentication support
+       jwtPrivateKey: ../cert/id_rsa
+       jwtPublicKey: ../cert/id_rsa.pub
+       jwtUserName: test
        # It is recommended to run CouchDB on the same server as the peer, and
        # not map the CouchDB container port to a server port in docker-compose.
        # Otherwise proper security must be provided on the connection between
        # CouchDB client (on the peer) and server.
-       couchDBAddress: 127.0.0.1:5984
+       couchDBAddress: 10.25.54.85:5984
        # This username must have read and write authority on CouchDB
        username:
        # The password is recommended to pass as an environment variable

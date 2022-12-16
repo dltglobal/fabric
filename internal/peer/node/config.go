@@ -73,6 +73,9 @@ func ledgerConfig() *ledger.Config {
 
 	if conf.StateDBConfig.StateDatabase == "CouchDB" {
 		conf.StateDBConfig.CouchDB = &ledger.CouchDBConfig{
+			JwtPrivateKey:           viper.GetString("ledger.state.couchDBConfig.jwtPrivateKey"),
+			JwtPublicKey:            viper.GetString("ledger.state.couchDBConfig.jwtPublicKey"),
+			JwtUserName:             viper.GetString("ledger.state.couchDBConfig.jwtUserName"),
 			Address:                 viper.GetString("ledger.state.couchDBConfig.couchDBAddress"),
 			Username:                viper.GetString("ledger.state.couchDBConfig.username"),
 			Password:                viper.GetString("ledger.state.couchDBConfig.password"),
